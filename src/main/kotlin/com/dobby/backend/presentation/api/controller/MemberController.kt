@@ -5,6 +5,7 @@ import com.dobby.backend.presentation.api.dto.request.member.ParticipantSignupRe
 import com.dobby.backend.presentation.api.dto.request.member.ResearcherSignupRequest
 import com.dobby.backend.presentation.api.dto.request.member.UpdateParticipantInfoRequest
 import com.dobby.backend.presentation.api.dto.request.member.UpdateResearcherInfoRequest
+import com.dobby.backend.presentation.api.dto.response.member.DefaultResponse
 import com.dobby.backend.presentation.api.dto.response.member.ParticipantInfoResponse
 import com.dobby.backend.presentation.api.dto.response.member.ResearcherInfoResponse
 import com.dobby.backend.presentation.api.dto.response.member.SignupResponse
@@ -51,7 +52,7 @@ class MemberController(
     }
 
     @PreAuthorize("hasRole('RESEARCHER')")
-    @GetMapping("/researchers/me")
+    @GetMapping("/me/researchers")
     @Operation(
         summary = "연구자 회원 정보 렌더링",
         description = "연구자의 회원 정보를 반환합니다."
@@ -63,7 +64,7 @@ class MemberController(
     }
 
     @PreAuthorize("hasRole('RESEARCHER')")
-    @PutMapping("/researchers/me")
+    @PutMapping("/me/researchers")
     @Operation(
         summary = "연구자 회원 정보 수정",
         description = "연구자의 회원 정보를 수정합니다."
@@ -77,7 +78,7 @@ class MemberController(
     }
 
     @PreAuthorize("hasRole('PARTICIPANT')")
-    @GetMapping("/participants/me")
+    @GetMapping("/me/participants")
     @Operation(
         summary = "참여자 회원 정보 렌더링",
         description = "참여자의 회원 정보를 반환합니다."
@@ -89,7 +90,7 @@ class MemberController(
     }
 
     @PreAuthorize("hasRole('PARTICIPANT')")
-    @PutMapping("/participants/me")
+    @PutMapping("/me/participants")
     @Operation(
         summary = "참여자 회원 정보 수정",
         description = "참여자의 회원 정보를 수정합니다."
@@ -100,5 +101,18 @@ class MemberController(
         val input = MemberMapper.toUpdateParticipantInfoUseCaseInput(request)
         val output = memberService.updateParticipantInfo(input)
         return MemberMapper.toParticipantInfoResponse(output)
+    }
+
+    @GetMapping("/me/validate/contact-email")
+    @Operation(
+        summary = "연락 받을 이메일 주소 검증 API",
+        description = "회원 정보 수정 시, 이메일 중복 확인을 위한 API입니다."
+    )
+    fun validateContactEmailForUpdate(
+        @RequestParam email: String
+    ): DefaultResponse {
+        val input = MemberMapper.toValidateContactEmailForUpdateUseCaseInput(email)
+        val output = memberService.validateContactEmailForUpdate(input)
+        return DefaultResponse(output.isDuplicate)
     }
 }

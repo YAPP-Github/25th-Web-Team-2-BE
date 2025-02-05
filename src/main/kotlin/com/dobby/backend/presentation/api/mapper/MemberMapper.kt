@@ -69,7 +69,8 @@ object MemberMapper {
                     name = input.name,
                     provider = input.provider,
                     role = input.role,
-                    oauthEmail = input.oauthEmail
+                    oauthEmail = input.oauthEmail,
+                    contactEmail = input.contactEmail
                 )
             }
             is CreateParticipantUseCase.MemberResponse -> {
@@ -78,7 +79,8 @@ object MemberMapper {
                     name = input.name,
                     provider = input.provider,
                     role = input.role,
-                    oauthEmail = input.oauthEmail
+                    oauthEmail = input.oauthEmail,
+                    contactEmail = input.contactEmail
                 )
             }
             else -> throw IllegalArgumentException("Unsupported MemberResponse type")
@@ -164,6 +166,13 @@ object MemberMapper {
             basicAddressInfo = AddressInfoResponse.fromDomain(output.basicAddressInfo),
             additionalAddressInfo = output.additionalAddressInfo?.let { AddressInfoResponse.fromDomain(it) },
             matchType = output.matchType
+        )
+    }
+
+    fun toValidateContactEmailForUpdateUseCaseInput(email: String): ValidateContactEmailForUpdateUseCase.Input {
+        return ValidateContactEmailForUpdateUseCase.Input(
+            memberId = getCurrentMemberId(),
+            contactEmail = email
         )
     }
 }
