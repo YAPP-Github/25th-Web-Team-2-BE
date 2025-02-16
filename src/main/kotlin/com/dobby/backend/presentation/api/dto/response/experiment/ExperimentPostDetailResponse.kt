@@ -1,10 +1,11 @@
 package com.dobby.backend.presentation.api.dto.response.experiment
 
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
-import com.dobby.backend.infrastructure.database.entity.enums.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
+import com.dobby.backend.infrastructure.database.entity.enums.member.MemberStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
@@ -21,6 +22,9 @@ data class ExperimentPostDetailResponse(
 
     @Schema(description = "업로더 이름", example = "야뿌")
     val uploaderName: String,
+
+    @Schema(description = "업로더 활성 상태", example = true.toString())
+    val isUploaderActive: Boolean,
 
     @Schema(description = "조회수", example = "123")
     val views: Int,
@@ -44,7 +48,10 @@ data class ExperimentPostDetailResponse(
     val imageList: List<String>,
 
     @Schema(description = "글쓴이 여부", example = "true")
-    val isAuthor: Boolean
+    val isAuthor: Boolean,
+
+    @Schema(description = "알림 동의 여부", example = "true")
+    val alarmAgree: Boolean
 ) {
     @Schema(description = "실험 공고 요약 정보")
     data class SummaryResponse(
@@ -87,8 +94,8 @@ data class ExperimentPostDetailResponse(
 
     @Schema(description = "주소 응답 DTO")
     data class AddressResponse(
-        @Schema(description = "학교", example = "건국대학교")
-        val univName: String?,
+        @Schema(description = "장소", example = "건국대학교 1층")
+        val place: String?,
 
         @Schema(description = "지역", example = "SEOUL")
         val region: Region?,

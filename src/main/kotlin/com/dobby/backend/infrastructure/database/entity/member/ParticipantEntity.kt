@@ -1,6 +1,6 @@
 package com.dobby.backend.infrastructure.database.entity.member
 
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
@@ -15,7 +15,7 @@ class ParticipantEntity (
     @Column(name= "participant_id", columnDefinition = "CHAR(13)")
     val id: String,
 
-    @OneToOne(fetch = FetchType.EAGER, cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinColumn(name = "member_id", nullable = false)
     val member: MemberEntity,
 

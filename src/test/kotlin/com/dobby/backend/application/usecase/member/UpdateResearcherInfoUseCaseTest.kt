@@ -2,13 +2,14 @@ package com.dobby.backend.application.usecase.member
 
 import com.dobby.backend.domain.exception.ContactEmailDuplicateException
 import com.dobby.backend.domain.exception.ResearcherNotFoundException
+import com.dobby.backend.domain.gateway.member.MemberConsentGateway
 import com.dobby.backend.domain.gateway.member.MemberGateway
 import com.dobby.backend.domain.gateway.member.ResearcherGateway
 import com.dobby.backend.domain.model.member.Member
 import com.dobby.backend.domain.model.member.Researcher
-import com.dobby.backend.infrastructure.database.entity.enums.MemberStatus
-import com.dobby.backend.infrastructure.database.entity.enums.ProviderType
-import com.dobby.backend.infrastructure.database.entity.enums.RoleType
+import com.dobby.backend.infrastructure.database.entity.enums.member.MemberStatus
+import com.dobby.backend.infrastructure.database.entity.enums.member.ProviderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.RoleType
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.assertions.throwables.shouldThrow
@@ -18,9 +19,10 @@ import io.mockk.verify
 import java.time.LocalDateTime
 
 class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
-    val researcherGateway = mockk<ResearcherGateway>()
-    val memberGateway = mockk<MemberGateway>()
-    val useCase = UpdateResearcherInfoUseCase(researcherGateway, memberGateway)
+    val researcherGateway = mockk<ResearcherGateway>(relaxed = true)
+    val memberGateway = mockk<MemberGateway>(relaxed = true)
+    val memberConsentGateway = mockk<MemberConsentGateway>(relaxed = true)
+    val useCase = UpdateResearcherInfoUseCase(researcherGateway, memberGateway, memberConsentGateway)
 
     given("유효한 memberId가 주어졌을 때") {
         val memberId = "1"
@@ -30,7 +32,7 @@ class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
             member = Member(
                 id = memberId, name = "기존 연구자", contactEmail = "old@example.com",
                 oauthEmail = "oauth@example.com", provider = ProviderType.NAVER, role = RoleType.RESEARCHER,
-                status = MemberStatus.ACTIVE, createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now()
+                status = MemberStatus.ACTIVE, createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now(), deletedAt = null
             ),
             univEmail = "old@university.com",
             univName = "Old University",
@@ -45,12 +47,16 @@ class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
             name = "새 연구자",
             univName = "New University",
             major = "New Major",
-            labInfo = "New Lab"
+            labInfo = "New Lab",
+            adConsent = true
         )
 
         every { researcherGateway.findByMemberId(memberId) } returns researcher
         every { memberGateway.existsByContactEmail(input.contactEmail) } returns false
-        every { researcherGateway.save(any()) } answers { firstArg() }
+        every { researcherGateway.save(any()) } answers {
+            val researcher = firstArg<Researcher>()
+            researcher.copy(id = memberId)
+        }
 
         `when`("useCase의 execute가 호출되면") {
             val result = useCase.execute(input)
@@ -82,7 +88,8 @@ class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
                 name = "테스트",
                 univName = "University",
                 major = "Major",
-                labInfo = null
+                labInfo = null,
+                adConsent = true
             )
 
             then("ResearcherNotFoundException이 발생한다") {
@@ -101,7 +108,7 @@ class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
             member = Member(
                 id = memberId, name = "기존 연구자", contactEmail = "old@example.com",
                 oauthEmail = "oauth@example.com", provider = ProviderType.NAVER, role = RoleType.RESEARCHER,
-                status = MemberStatus.ACTIVE, createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now()
+                status = MemberStatus.ACTIVE, createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now(), deletedAt = null
             ),
             univEmail = "old@university.com",
             univName = "Old University",
@@ -116,11 +123,13 @@ class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
             name = "새 연구자",
             univName = "New University",
             major = "New Major",
-            labInfo = "New Lab"
+            labInfo = "New Lab",
+            adConsent = true
         )
 
         every { researcherGateway.findByMemberId(memberId) } returns researcher
         every { memberGateway.existsByContactEmail(input.contactEmail) } returns true
+        every { researcherGateway.save(any()) } returns mockk(relaxed = true)
 
         `when`("useCase의 execute가 호출되면") {
             then("ContactEmailDuplicateException이 발생한다") {
@@ -146,7 +155,8 @@ class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
                 role = RoleType.RESEARCHER,
                 status = MemberStatus.ACTIVE,
                 createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now()
+                updatedAt = LocalDateTime.now(),
+                deletedAt = null
             ),
             univEmail = "old@university.com",
             univName = "Old University",
@@ -161,12 +171,14 @@ class UpdateResearcherInfoUseCaseTest : BehaviorSpec({
             name = "새 연구자",
             univName = "New University",
             major = "New Major",
-            labInfo = "New Lab"
+            labInfo = "New Lab",
+            adConsent = true
         )
 
         every { researcherGateway.findByMemberId(memberId) } returns researcher
-        every { memberGateway.existsByContactEmail(input.contactEmail) } returns true
+        every { memberGateway.existsByContactEmail(input.contactEmail) } returns false
         every { researcherGateway.save(any()) } answers { firstArg() }
+        every { memberConsentGateway.save(any()) } answers { firstArg() }
 
         `when`("useCase의 execute가 호출되면") {
             val result = useCase.execute(input)

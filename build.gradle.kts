@@ -41,6 +41,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.3")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("com.github.f4b6a3:tsid-creator:5.2.6")
@@ -79,6 +81,9 @@ dependencies {
 	testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.2")
 
 	testImplementation("io.mockk:mockk:1.13.10")
+
+	testImplementation("org.testcontainers:testcontainers:1.19.3")
+	testImplementation("org.testcontainers:junit-jupiter:1.19.3")
 }
 
 dependencyManagement {

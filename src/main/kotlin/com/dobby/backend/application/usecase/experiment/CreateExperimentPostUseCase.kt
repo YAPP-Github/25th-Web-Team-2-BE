@@ -10,10 +10,10 @@ import com.dobby.backend.domain.model.experiment.ExperimentImage
 import com.dobby.backend.domain.model.experiment.ExperimentPost
 import com.dobby.backend.domain.model.experiment.TargetGroup
 import com.dobby.backend.domain.model.member.Member
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
-import com.dobby.backend.infrastructure.database.entity.enums.RoleType
-import com.dobby.backend.infrastructure.database.entity.enums.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.member.RoleType
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
 import java.time.LocalDate
@@ -37,7 +37,7 @@ class CreateExperimentPostUseCase(
         val timeRequired: TimeSlot?,
 
         val leadResearcher: String,
-        val univName: String?,
+        val place: String?,
         val region: Region?,
         val area: Area?,
         val detailedAddress: String?,
@@ -73,7 +73,7 @@ class CreateExperimentPostUseCase(
         val postId: String,
         val title: String,
         val views: Int,
-        val univName: String?,
+        val place: String?,
         val reward: String?,
         val durationInfo: DurationInfo?,
     )
@@ -116,13 +116,13 @@ class CreateExperimentPostUseCase(
             timeRequired = input.timeRequired,
             count = input.count,
             matchType = input.matchType,
-            univName = input.univName,
+            place = input.place,
             region = input.region,
             area = input.area,
             detailedAddress = input.detailedAddress,
             alarmAgree = input.alarmAgree,
-            recruitStatus = true,
-            )
+            recruitStatus = true
+        )
 
         val experimentImages = input.imageListInfo.images.map { imageUrl ->
             ExperimentImage.newExperimentImage(
@@ -140,7 +140,7 @@ class CreateExperimentPostUseCase(
                 postId = savedExperimentPost.id,
                 title = savedExperimentPost.title,
                 views = savedExperimentPost.views,
-                univName = savedExperimentPost.univName,
+                place = savedExperimentPost.place,
                 durationInfo = DurationInfo(
                     startDate = savedExperimentPost.startDate,
                     endDate = savedExperimentPost.endDate

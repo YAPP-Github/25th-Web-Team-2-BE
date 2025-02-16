@@ -12,12 +12,17 @@ import com.dobby.backend.domain.gateway.UrlGeneratorGateway
 import com.dobby.backend.domain.gateway.email.EmailGateway
 import com.dobby.backend.domain.gateway.member.MemberGateway
 import com.dobby.backend.domain.model.experiment.ExperimentPost
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.MemberStatus
+import com.dobby.backend.infrastructure.database.entity.enums.member.ProviderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.RoleType
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.assertions.throwables.shouldThrow
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.*
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -41,7 +46,8 @@ class SendMatchingEmailUseCaseTest : BehaviorSpec({
                 provider = ProviderType.NAVER,
                 status = MemberStatus.ACTIVE,
                 createdAt = LocalDateTime.now().minusDays(2),
-                updatedAt = LocalDateTime.now().minusDays(2)
+                updatedAt = LocalDateTime.now().minusDays(2),
+                deletedAt = null
             )
 
             val experimentPosts = listOf(
@@ -71,7 +77,7 @@ class SendMatchingEmailUseCaseTest : BehaviorSpec({
                     count = 35,
                     timeRequired = TimeSlot.LESS_30M,
                     leadResearcher = "야뿌 랩실 서버 25기 신수정",
-                    univName = "이화여자대학교",
+                    place = "이화여자대학교",
                     region = Region.SEOUL,
                     area = Area.SEOUL_ALL,
                     detailedAddress = "ECC B123호",
@@ -84,13 +90,15 @@ class SendMatchingEmailUseCaseTest : BehaviorSpec({
             )
             val input = SendMatchingEmailUseCase.Input(contactEmail, experimentPosts, LocalDateTime.now())
 
-            every { emailGateway.sendEmail(any(), any(), any()) } returns Unit
+            coEvery { emailGateway.sendEmail(any(), any(), any()) } just Runs
 
-            then("이메일 전송이 성공해야 한다") {
-                val output = sendMatchingEmailUseCase.execute(input)
-
-                output.isSuccess shouldBe true
-                verify(exactly = 1) { emailGateway.sendEmail(contactEmail, any(), any()) }
+            then("이메일 전송이 성공해야 한다")  {
+                runTest {
+                    val output = sendMatchingEmailUseCase.execute(input)
+                    output.isSuccess shouldBe true
+                    coVerify(exactly = 1) { emailGateway.sendEmail(contactEmail, any(), any())
+                    }
+                }
             }
         }
 
@@ -105,7 +113,8 @@ class SendMatchingEmailUseCaseTest : BehaviorSpec({
                 provider = ProviderType.NAVER,
                 status = MemberStatus.ACTIVE,
                 createdAt = LocalDateTime.now().minusDays(2),
-                updatedAt = LocalDateTime.now().minusDays(2)
+                updatedAt = LocalDateTime.now().minusDays(2),
+                deletedAt = null
             )
 
             val experimentPosts = listOf(
@@ -135,7 +144,7 @@ class SendMatchingEmailUseCaseTest : BehaviorSpec({
                     count = 35,
                     timeRequired = TimeSlot.LESS_30M,
                     leadResearcher = "야뿌 랩실 서버 25기 신수정",
-                    univName = "이화여자대학교",
+                    place = "이화여자대학교",
                     region = Region.SEOUL,
                     area = Area.SEOUL_ALL,
                     detailedAddress = "ECC B123호",
@@ -149,13 +158,13 @@ class SendMatchingEmailUseCaseTest : BehaviorSpec({
             val input = SendMatchingEmailUseCase.Input(invalidEmail, experimentPosts, LocalDateTime.now())
 
             then("EmailDomainNotFoundException 예외가 발생해야 한다") {
-                val exception = shouldThrow<EmailDomainNotFoundException> {
-                    sendMatchingEmailUseCase.execute(input)
+                runTest {
+                    val exception = shouldThrow<EmailDomainNotFoundException> {
+                        runBlocking { sendMatchingEmailUseCase.execute(input) }
+                    }
+                    exception shouldBe EmailDomainNotFoundException
                 }
-
-                exception shouldBe EmailDomainNotFoundException
             }
         }
     }
 })
-

@@ -7,16 +7,16 @@ import com.dobby.backend.domain.model.experiment.ExperimentPost
 import com.dobby.backend.domain.model.experiment.TargetGroup
 import com.dobby.backend.domain.model.member.Member
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
-import com.dobby.backend.infrastructure.database.entity.enums.TimeSlot
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.member.*
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import java.time.LocalDate
 import java.time.LocalDateTime
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
 
 class GetExperimentPostDetailUseCaseTest : BehaviorSpec({
     val experimentPostGateway = mockk<ExperimentPostGateway>()
@@ -28,6 +28,7 @@ class GetExperimentPostDetailUseCaseTest : BehaviorSpec({
         val member = mockk<Member>()
         every { member.name } returns "임도비"
         every { member.id } returns "1"
+        every { member.deletedAt } returns null
 
         val targetGroup = mockk<TargetGroup>()
         every { targetGroup.id } returns "1"
@@ -61,7 +62,7 @@ class GetExperimentPostDetailUseCaseTest : BehaviorSpec({
             applyMethod = applyMethod,
             region = Region.SEOUL,
             area = Area.GWANGJINGU,
-            univName = "건국대학교",
+            place = "건국대학교",
             detailedAddress = "건국대학교 공학관",
             content = "야뿌들의 한끼 식사량을 체크하는 테스트입니다.",
             alarmAgree = false,
@@ -76,9 +77,9 @@ class GetExperimentPostDetailUseCaseTest : BehaviorSpec({
             val initialViews = experimentPost.views
             val result = getExperimentPostDetailUseCase.execute(input)
 
-            then("isAuthor가 true인 experimentPostDetailResponse가 반환된다") {
-                result.experimentPostDetailResponse.title shouldBe experimentPost.title
-                result.experimentPostDetailResponse.isAuthor shouldBe true
+            then("isAuthor가 true인 experimentPostDetail이 반환된다") {
+                result.experimentPostDetail.title shouldBe experimentPost.title
+                result.experimentPostDetail.isAuthor shouldBe true
             }
 
             then("views가 증가했는지 확인한다") {
@@ -90,9 +91,9 @@ class GetExperimentPostDetailUseCaseTest : BehaviorSpec({
             val input = GetExperimentPostDetailUseCase.Input(experimentPostId = experimentPostId, memberId = "2")
             val result = getExperimentPostDetailUseCase.execute(input)
 
-            then("isAuthor가 false인 experimentPostDetailResponse가 반환된다") {
-                result.experimentPostDetailResponse.title shouldBe experimentPost.title
-                result.experimentPostDetailResponse.isAuthor shouldBe false
+            then("isAuthor가 false인 experimentPostDetail이 반환된다") {
+                result.experimentPostDetail.title shouldBe experimentPost.title
+                result.experimentPostDetail.isAuthor shouldBe false
             }
         }
 
@@ -100,16 +101,26 @@ class GetExperimentPostDetailUseCaseTest : BehaviorSpec({
             val input = GetExperimentPostDetailUseCase.Input(experimentPostId = experimentPostId, memberId = null)
             val result = getExperimentPostDetailUseCase.execute(input)
 
-            then("isAuthor가 false인 experimentPostDetailResponse가 반환된다") {
-                result.experimentPostDetailResponse.title shouldBe experimentPost.title
-                result.experimentPostDetailResponse.isAuthor shouldBe false
+            then("isAuthor가 false인 experimentPostDetail이 반환된다") {
+                result.experimentPostDetail.title shouldBe experimentPost.title
+                result.experimentPostDetail.isAuthor shouldBe false
+            }
+        }
+
+        `when`("탈퇴한 회원이 작성한 게시글인 경우") {
+            every { member.deletedAt } returns LocalDateTime.now()
+            val input = GetExperimentPostDetailUseCase.Input(experimentPostId = experimentPostId, memberId = null)
+            val result = getExperimentPostDetailUseCase.execute(input)
+
+            then("isAuthor가 false인 experimentPostDetail이 반환된다") {
+                result.experimentPostDetail.title shouldBe experimentPost.title
+                result.experimentPostDetail.isAuthor shouldBe false
             }
         }
     }
 
     given("유효하지 않은 experimentPostId가 주어졌을 때") {
         val invalidExperimentPostId = "999"
-
         every { experimentPostGateway.findById(invalidExperimentPostId) } returns null
 
         `when`("execute가 호출되면") {

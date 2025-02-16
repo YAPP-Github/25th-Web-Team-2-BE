@@ -6,8 +6,8 @@ import com.dobby.backend.domain.gateway.experiment.ExperimentPostGateway
 import com.dobby.backend.domain.model.experiment.ApplyMethod
 import com.dobby.backend.domain.model.experiment.ExperimentPost
 import com.dobby.backend.domain.model.experiment.TargetGroup
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
-import com.dobby.backend.infrastructure.database.entity.enums.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
 import io.kotest.assertions.throwables.shouldThrow
@@ -54,7 +54,7 @@ class UpdateExperimentPostRecruitStatusUseCaseTest : BehaviorSpec({
             timeRequired = TimeSlot.ABOUT_1H,
             count = 10,
             matchType = mockk(),
-            univName = "야뿌대학교",
+            place = "야뿌대학교",
             region = Region.SEOUL,
             area = Area.GANGNAMGU,
             detailedAddress = "서버학과 연구소",
@@ -110,7 +110,7 @@ class UpdateExperimentPostRecruitStatusUseCaseTest : BehaviorSpec({
             timeRequired = TimeSlot.ABOUT_1H,
             count = 10,
             matchType = mockk(),
-            univName = "야뿌대학교",
+            place = "야뿌대학교",
             region = Region.SEOUL,
             area = Area.GANGNAMGU,
             detailedAddress = "서버학과 연구소",

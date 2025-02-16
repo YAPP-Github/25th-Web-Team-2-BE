@@ -41,6 +41,7 @@ data object CodeNotCorrectException : ClientException("VE0004", "Verification co
 data object CodeExpiredException : ClientException("VE0005", "Verification code is expired", HttpStatus.BAD_REQUEST)
 data object EmailFormatInvalidException : ClientException("VE0006", "Email is invalid format", HttpStatus.BAD_REQUEST)
 data object EmailAlreadyVerifiedException : ClientException("VE0007", "This email is already verified", HttpStatus.CONFLICT)
+data object TooManyVerificationRequestException : ClientException("VE0008", "You can request verification up to 3 in one day.", HttpStatus.TOO_MANY_REQUESTS)
 
 /**
  * Member error codes
@@ -52,6 +53,7 @@ data object ParticipantNotFoundException : ClientException("ME0004", "Participan
 data object EmailNotValidateException : ClientException("ME0005", "You should validate your school email first", HttpStatus.BAD_REQUEST)
 data object SignupOauthEmailDuplicateException : ClientException("ME0006", "You've already joined with requested oauth email", HttpStatus.CONFLICT)
 data object ContactEmailDuplicateException: ClientException("ME0007", "This contact email is already in use.", HttpStatus.CONFLICT)
+data object MemberConsentNotFoundException : ClientException("ME0008", "Member Consent Not Found.", HttpStatus.NOT_FOUND)
 
 /**
  * Experiment error codes
@@ -60,9 +62,14 @@ data object ExperimentPostNotFoundException : ClientException("EP0001", "Experim
 data object ExperimentAreaOverflowException : ClientException("EP0003", "You can only select up to 5 Area options in 1 Region.", HttpStatus.BAD_REQUEST)
 data object ExperimentAreaInCorrectException : ClientException("EP0004", "Selected Area doesn't belong to correct Region.", HttpStatus.BAD_REQUEST)
 data object ExperimentPostImageSizeException : ClientException("EP0005", "Image can be uploaded maximum 3 images.", HttpStatus.BAD_REQUEST)
-data object ExperimentPostRecruitStatusException : ClientException("EP0006", "This experiment post has already closed recruitment.", HttpStatus.BAD_REQUEST)
-data object ExperimentPostUpdateDateException : ClientException("EP0007", "You cannot update experiment post with past experiment dates.", HttpStatus.BAD_REQUEST)
-data object ExperimentPostInvalidOnlineRequestException : ClientException("EP0008", "univName, region, area field value must be null when MatchType is online.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostRecruitStatusException : ClientException("EP0006", "You cannot update recruitStatus with closed recruitment post.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostUpdateDateException : ClientException("EP0007", "You cannot update startDate, endDate with closed recruitment post.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostInvalidOnlineRequestException : ClientException("EP0008", "place, region, area field value must be null when MatchType is online.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostTitleException : ClientException ("EP0009", "Title cannot be null.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostRewardException: ClientException ("EP0010", "Reward cannot be null.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostContentException: ClientException ("EP0011", "Content cannot be null.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostCountException: ClientException ("EP0012", "Count could be more than zero.", HttpStatus.BAD_REQUEST)
+data object ExperimentPostLeadResearcherException: ClientException ("EP0013", "Lead Researcher cannot be null.", HttpStatus.BAD_REQUEST)
 
 
 /**

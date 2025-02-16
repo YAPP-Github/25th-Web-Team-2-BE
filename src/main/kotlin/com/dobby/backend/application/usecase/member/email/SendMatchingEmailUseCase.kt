@@ -1,6 +1,6 @@
 package com.dobby.backend.application.usecase.member.email
 
-import com.dobby.backend.application.usecase.UseCase
+import com.dobby.backend.application.usecase.AsyncUseCase
 import com.dobby.backend.domain.exception.ContactEmailDuplicateException
 import com.dobby.backend.domain.exception.EmailDomainNotFoundException
 import com.dobby.backend.domain.gateway.UrlGeneratorGateway
@@ -8,6 +8,7 @@ import com.dobby.backend.domain.gateway.email.EmailGateway
 import com.dobby.backend.domain.gateway.member.MemberGateway
 import com.dobby.backend.domain.model.experiment.ExperimentPost
 import com.dobby.backend.util.EmailUtils
+import com.dobby.backend.util.RetryUtils
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -16,7 +17,7 @@ class SendMatchingEmailUseCase(
     private val emailGateway: EmailGateway,
     private val urlGeneratorGateway: UrlGeneratorGateway,
     private val memberGateway: MemberGateway
-): UseCase<SendMatchingEmailUseCase.Input, SendMatchingEmailUseCase.Output>{
+): AsyncUseCase<SendMatchingEmailUseCase.Input, SendMatchingEmailUseCase.Output>{
 
     data class Input(
         val contactEmail: String,
@@ -29,14 +30,16 @@ class SendMatchingEmailUseCase(
         val message: String
     )
 
-    override fun execute(input: Input): Output {
+    override suspend fun execute(input: Input): Output {
         validateEmail(input.contactEmail)
         val member = memberGateway.findByContactEmail(input.contactEmail)
             ?: throw ContactEmailDuplicateException
         val (title, content) = getFormattedEmail(member.name, input.experimentPosts)
 
         return try {
-            emailGateway.sendEmail(input.contactEmail, title, content)
+            RetryUtils.retryWithBackOff {
+                emailGateway.sendEmail(input.contactEmail, title, content)
+            }
             Output(isSuccess = true, message = " Email successfully sent to ${input.contactEmail}")
         } catch (ex: Exception) {
             Output(isSuccess = false, message = "Failed to send to email to ${input.contactEmail}: ${ex.message}")
@@ -55,7 +58,7 @@ class SendMatchingEmailUseCase(
             """
         🔹 **${post.title}**
         -  기간: ${post.startDate} ~ ${post.endDate}
-        -  위치: ${post.univName ?: "공고참고"} 
+        -  위치: ${post.place ?: "공고참고"} 
         -  보상: ${post.reward}
         -  [공고 확인하기]($postUrl)
         """.trimIndent()

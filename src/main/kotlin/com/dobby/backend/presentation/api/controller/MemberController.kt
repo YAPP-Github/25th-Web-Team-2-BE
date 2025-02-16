@@ -9,8 +9,9 @@ import com.dobby.backend.presentation.api.dto.request.member.UpdateParticipantIn
 import com.dobby.backend.presentation.api.dto.request.member.UpdateResearcherInfoRequest
 import com.dobby.backend.presentation.api.dto.response.member.ParticipantInfoResponse
 import com.dobby.backend.presentation.api.dto.response.member.ResearcherInfoResponse
-import com.dobby.backend.presentation.api.dto.response.member.SignupResponse
+import com.dobby.backend.presentation.api.dto.response.member.SignUpResponse
 import com.dobby.backend.presentation.api.mapper.MemberMapper
+import com.dobby.backend.util.getCurrentMemberId
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
@@ -28,12 +29,12 @@ class MemberController(
         summary = "참여자 회원가입 API- OAuth 로그인 필수",
         description = "참여자 OAuth 로그인 실패 시, 리다이렉팅하여 참여자 회원가입하는 API입니다."
     )
-    fun signupParticipants(
+    fun signUpParticipant(
         @RequestBody @Valid req: ParticipantSignupRequest
-    ): SignupResponse {
+    ): SignUpResponse {
         val input = MemberMapper.toCreateParticipantInput(req)
-        val output = memberService.participantSignup(input)
-        return MemberMapper.toParticipantSignupResponse(output)
+        val output = memberService.signUpParticipant(input)
+        return MemberMapper.toParticipantSignUpResponse(output)
     }
 
     @PostMapping("/signup/researcher")
@@ -44,12 +45,12 @@ class MemberController(
          ⚠️ 이메일 인증 성공 시에만 회원가입이 완료되어야 합니다.
             """
     )
-    fun signupResearchers(
+    fun signUpResearcher(
         @RequestBody @Valid req: ResearcherSignupRequest
-    ): SignupResponse {
+    ): SignUpResponse {
         val input = MemberMapper.toCreateResearcherInput(req)
-        val output = memberService.researcherSignup(input)
-        return MemberMapper.toResearcherSignupResponse(output)
+        val output = memberService.signUpResearcher(input)
+        return MemberMapper.toResearcherSignUpResponse(output)
     }
 
     @GetMapping("/signup/validation/contact-email")
@@ -120,13 +121,29 @@ class MemberController(
     @GetMapping("/me/validation/contact-email")
     @Operation(
         summary = "연락 받을 이메일 주소 검증 API",
-        description = "회원 정보 수정 시, 이메일 중복 확인을 위한 API입니다."
+        description = "회원 정보 수정 시, 이메일 중복 확인을 위한 API입니다. 사용가능하면 true, 아니면 예외를 반환합니다."
     )
     fun validateContactEmailForUpdate(
         @RequestParam contactEmail: String
     ): DefaultResponse {
         val input = MemberMapper.toValidateContactEmailForUpdateUseCaseInput(contactEmail)
         val output = memberService.validateContactEmailForUpdate(input)
-        return DefaultResponse(output.isDuplicate)
+        return MemberMapper.toValidateContactEmailForUpdateResponse(output)
+    }
+
+    @DeleteMapping
+    @Operation(
+        summary = "회원 탈퇴 API",
+        description = "회원 탈퇴 API입니다."
+    )
+    fun deleteMember(
+        @RequestBody @Valid request: DeleteMemberRequest
+    ): DefaultResponse {
+        val memberId = getCurrentMemberId()
+        val roleType = memberService.getMemberRole(memberId)
+
+        val input = MemberMapper.toDeleteMemberUseCaseInput(request, roleType)
+        memberService.deleteMember(input)
+        return DefaultResponse(true)
     }
 }

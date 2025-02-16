@@ -1,6 +1,6 @@
 package com.dobby.backend.presentation.api.dto.request.member
 
-import com.dobby.backend.infrastructure.database.entity.enums.ProviderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.ProviderType
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
@@ -38,5 +38,8 @@ data class ResearcherSignupRequest(
     val major: String,
 
     @Schema(description = "연구실 정보")
-    val labInfo: String?
+    val labInfo: String?,
+
+    @Schema(description = "광고성 정보 이메일/SMS 수신 동의 여부")
+    var adConsent: Boolean,
 )

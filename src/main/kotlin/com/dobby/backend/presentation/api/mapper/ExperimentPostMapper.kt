@@ -6,7 +6,7 @@ import com.dobby.backend.application.usecase.experiment.GetExperimentPostApplyMe
 import com.dobby.backend.application.usecase.experiment.GetExperimentPostDetailUseCase
 import com.dobby.backend.presentation.api.dto.request.PreSignedUrlRequest
 import com.dobby.backend.presentation.api.dto.response.PreSignedUrlResponse
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
@@ -28,7 +28,7 @@ object ExperimentPostMapper {
             title = request.title,
             content = request.content,
             alarmAgree = request.alarmAgree,
-            univName = request.univName,
+            place = request.place,
             count = request.count,
             region = request.region,
             area = request.area,
@@ -68,7 +68,7 @@ object ExperimentPostMapper {
 
     fun toCreateExperimentPostResponse(response: CreateExperimentPostUseCase.Output): CreateExperimentPostResponse{
         return CreateExperimentPostResponse(
-             postInfo = toCreatePostInfo(response.postInfo)
+            postInfo = toCreatePostInfo(response.postInfo)
         )
     }
 
@@ -82,7 +82,7 @@ object ExperimentPostMapper {
                 endDate = input.durationInfo?.endDate
             ),
             reward = input.reward,
-            univName = input.univName
+            place = input.place
         )
     }
 
@@ -121,7 +121,7 @@ object ExperimentPostMapper {
                 endDate = input.durationInfo?.endDate
             ),
             reward = input.reward,
-            univName = input.univName
+            place = input.place
         )
     }
 
@@ -129,32 +129,87 @@ object ExperimentPostMapper {
         return UpdateExperimentPostUseCase.Input(
             experimentPostId = postId,
             memberId = getCurrentMemberId(),
-                applyMethodInfo = toUpdateApplyMethodInfo(request.applyMethodInfo),
-                targetGroupInfo = toUpdateTargetGroupInfo(request.targetGroupInfo),
-                imageListInfo = toUpdateImageListInfo(request.imageListInfo),
-                title = request.title,
-                content = request.content,
-                univName = request.univName,
-                count = request.count,
-                region = request.region,
-                area = request.area,
-                timeRequired = request.timeRequired,
-                reward = request.reward,
-                startDate = request.startDate,
-                endDate = request.endDate,
-                matchType = request.matchType,
-                detailedAddress = request.detailedAddress,
-                leadResearcher = request.leadResearcher,
-            )
+            applyMethodInfo = toUpdateApplyMethodInfo(request.applyMethodInfo),
+            targetGroupInfo = toUpdateTargetGroupInfo(request.targetGroupInfo),
+            imageListInfo = toUpdateImageListInfo(request.imageListInfo),
+            title = request.title,
+            content = request.content,
+            place = request.place,
+            count = request.count,
+            region = request.region,
+            area = request.area,
+            timeRequired = request.timeRequired,
+            reward = request.reward,
+            startDate = request.startDate,
+            endDate = request.endDate,
+            matchType = request.matchType,
+            detailedAddress = request.detailedAddress,
+            leadResearcher = request.leadResearcher,
+            recruitStatus = request.recruitStatus
+        )
     }
 
-    fun toUpdateExperimentPostResponse(response: UpdateExperimentPostUseCase.Output): UpdateExperimentPostResponse{
-        val responseDto= UpdateExperimentPostResponse(
+    fun toUpdateExperimentPostResponse(response: UpdateExperimentPostUseCase.Output): UpdateExperimentPostResponse {
+        return UpdateExperimentPostResponse(
             postInfo = toUpdatePostInfo(response.postInfo)
         )
-        return responseDto
     }
 
+    fun toGetExperimentPostDetailForUpdateUseCaseInput(experimentPostId: String): GetExperimentPostDetailForUpdateUseCase.Input {
+        return GetExperimentPostDetailForUpdateUseCase.Input(
+            experimentPostId = experimentPostId,
+            memberId = getCurrentMemberId()
+        )
+    }
+
+    fun toGetExperimentPostDetailForUpdateResponse(response: GetExperimentPostDetailForUpdateUseCase.Output): ExperimentPostDetailResponse {
+        return ExperimentPostDetailResponse(
+            experimentPostId = response.experimentPostDetail.experimentPostId,
+            title = response.experimentPostDetail.title,
+            uploadDate = response.experimentPostDetail.uploadDate,
+            uploaderName = response.experimentPostDetail.uploaderName,
+            views = response.experimentPostDetail.views,
+            recruitStatus = response.experimentPostDetail.recruitStatus,
+            summary = response.experimentPostDetail.summary.toResponse(),
+            targetGroup = response.experimentPostDetail.targetGroup.toResponse(),
+            address = response.experimentPostDetail.address.toResponse(),
+            content = response.experimentPostDetail.content,
+            imageList = response.experimentPostDetail.imageList,
+            isAuthor = response.experimentPostDetail.isAuthor,
+            isUploaderActive = response.experimentPostDetail.isUploaderActive,
+            alarmAgree = response.experimentPostDetail.alarmAgree
+        )
+    }
+
+    private fun GetExperimentPostDetailForUpdateUseCase.ExperimentPostDetailForUpdate.Summary.toResponse(): ExperimentPostDetailResponse.SummaryResponse {
+        return ExperimentPostDetailResponse.SummaryResponse(
+            startDate = this.startDate,
+            endDate = this.endDate,
+            leadResearcher = this.leadResearcher,
+            matchType = this.matchType,
+            reward = this.reward,
+            count = this.count,
+            timeRequired = this.timeRequired
+        )
+    }
+
+    private fun GetExperimentPostDetailForUpdateUseCase.ExperimentPostDetailForUpdate.TargetGroup.toResponse(): ExperimentPostDetailResponse.TargetGroupResponse {
+        return ExperimentPostDetailResponse.TargetGroupResponse(
+            startAge = this.startAge,
+            endAge = this.endAge,
+            genderType = this.genderType,
+            otherCondition = this.otherCondition
+        )
+    }
+
+    private fun GetExperimentPostDetailForUpdateUseCase.ExperimentPostDetailForUpdate.Address.toResponse(): ExperimentPostDetailResponse.AddressResponse {
+        return ExperimentPostDetailResponse.AddressResponse(
+            place = this.place,
+            region = this.region,
+            area = this.area,
+            detailedAddress = this.detailedAddress
+        )
+    }
 
     fun toGetExperimentPostDetailUseCaseInput(experimentPostId: String): GetExperimentPostDetailUseCase.Input {
         return GetExperimentPostDetailUseCase.Input(
@@ -165,18 +220,50 @@ object ExperimentPostMapper {
 
     fun toGetExperimentPostDetailResponse(response: GetExperimentPostDetailUseCase.Output): ExperimentPostDetailResponse {
         return ExperimentPostDetailResponse(
-            experimentPostId = response.experimentPostDetailResponse.experimentPostId,
-            title = response.experimentPostDetailResponse.title,
-            uploadDate = response.experimentPostDetailResponse.uploadDate,
-            uploaderName = response.experimentPostDetailResponse.uploaderName,
-            views = response.experimentPostDetailResponse.views,
-            recruitStatus = response.experimentPostDetailResponse.recruitStatus,
-            summary = response.experimentPostDetailResponse.summary,
-            targetGroup = response.experimentPostDetailResponse.targetGroup,
-            address = response.experimentPostDetailResponse.address,
-            content = response.experimentPostDetailResponse.content,
-            imageList = response.experimentPostDetailResponse.imageList,
-            isAuthor = response.experimentPostDetailResponse.isAuthor
+            experimentPostId = response.experimentPostDetail.experimentPostId,
+            title = response.experimentPostDetail.title,
+            uploadDate = response.experimentPostDetail.uploadDate,
+            uploaderName = response.experimentPostDetail.uploaderName,
+            views = response.experimentPostDetail.views,
+            recruitStatus = response.experimentPostDetail.recruitStatus,
+            summary = response.experimentPostDetail.summary.toResponse(),
+            targetGroup = response.experimentPostDetail.targetGroup.toResponse(),
+            address = response.experimentPostDetail.address.toResponse(),
+            content = response.experimentPostDetail.content,
+            imageList = response.experimentPostDetail.imageList,
+            isAuthor = response.experimentPostDetail.isAuthor,
+            isUploaderActive = response.experimentPostDetail.isUploaderActive,
+            alarmAgree = response.experimentPostDetail.alarmAgree
+        )
+    }
+
+    private fun GetExperimentPostDetailUseCase.ExperimentPostDetail.Summary.toResponse(): ExperimentPostDetailResponse.SummaryResponse {
+        return ExperimentPostDetailResponse.SummaryResponse(
+            startDate = this.startDate,
+            endDate = this.endDate,
+            leadResearcher = this.leadResearcher,
+            matchType = this.matchType,
+            reward = this.reward,
+            count = this.count,
+            timeRequired = this.timeRequired
+        )
+    }
+
+    private fun GetExperimentPostDetailUseCase.ExperimentPostDetail.TargetGroup.toResponse(): ExperimentPostDetailResponse.TargetGroupResponse {
+        return ExperimentPostDetailResponse.TargetGroupResponse(
+            startAge = this.startAge,
+            endAge = this.endAge,
+            genderType = this.genderType,
+            otherCondition = this.otherCondition
+        )
+    }
+
+    private fun GetExperimentPostDetailUseCase.ExperimentPostDetail.Address.toResponse(): ExperimentPostDetailResponse.AddressResponse {
+        return ExperimentPostDetailResponse.AddressResponse(
+            place = this.place,
+            region = this.region,
+            area = this.area,
+            detailedAddress = this.detailedAddress
         )
     }
 
@@ -254,11 +341,14 @@ object ExperimentPostMapper {
     }
 
     fun toGetExperimentPostsUseCasePagination(
-        page: Int, count: Int
+        page: Int,
+        count: Int,
+        order: String
     ) : GetExperimentPostsUseCase.PaginationInput {
         return GetExperimentPostsUseCase.PaginationInput(
             page = page,
             count = count,
+            order = order
         )
     }
 
@@ -286,7 +376,7 @@ object ExperimentPostMapper {
                         experimentPostId = post.postInfo.experimentPostId,
                         title = post.postInfo.title,
                         views = post.postInfo.views,
-                        univName = post.postInfo.univName,
+                        place = post.postInfo.place,
                         reward = post.postInfo.reward,
                         durationInfo = DurationInfo(
                             startDate = post.postInfo.durationInfo.startDate,
@@ -295,7 +385,7 @@ object ExperimentPostMapper {
                     ),
                     recruitStatus = post.postInfo.recruitStatus
                 )
-                                 },
+            },
             page = page,
             size = output.size,
             totalCount = totalCount,

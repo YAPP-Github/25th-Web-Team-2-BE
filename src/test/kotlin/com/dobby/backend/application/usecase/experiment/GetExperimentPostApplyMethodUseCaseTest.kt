@@ -7,7 +7,7 @@ import com.dobby.backend.domain.model.experiment.ExperimentPost
 import com.dobby.backend.domain.model.experiment.TargetGroup
 import com.dobby.backend.domain.model.member.Member
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
-import com.dobby.backend.infrastructure.database.entity.enums.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
 import io.kotest.core.spec.style.BehaviorSpec
@@ -52,7 +52,7 @@ class GetExperimentPostApplyMethodUseCaseTest : BehaviorSpec({
             applyMethod = applyMethod,
             region = Region.SEOUL,
             area = Area.GWANGJINGU,
-            univName = "건국대학교",
+            place = "건국대학교",
             detailedAddress = "건국대학교 공학관",
             content = "야뿌들의 한끼 식사량을 체크하는 테스트입니다.",
             alarmAgree = false,

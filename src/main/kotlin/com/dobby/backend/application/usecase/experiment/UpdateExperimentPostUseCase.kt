@@ -1,18 +1,20 @@
 package com.dobby.backend.application.usecase.experiment
 
 import com.dobby.backend.application.usecase.UseCase
+import com.dobby.backend.domain.IdGenerator
 import com.dobby.backend.domain.exception.*
 import com.dobby.backend.domain.gateway.experiment.ExperimentPostGateway
 import com.dobby.backend.domain.model.experiment.ExperimentPost
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
-import com.dobby.backend.infrastructure.database.entity.enums.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
 import java.time.LocalDate
 
 class UpdateExperimentPostUseCase (
-    private val experimentPostGateway: ExperimentPostGateway
+    private val experimentPostGateway: ExperimentPostGateway,
+    private val idGenerator: IdGenerator
 ) : UseCase<UpdateExperimentPostUseCase.Input, UpdateExperimentPostUseCase.Output> {
     data class Input(
         val experimentPostId: String,
@@ -28,10 +30,11 @@ class UpdateExperimentPostUseCase (
         val timeRequired: TimeSlot?,
 
         val leadResearcher: String?,
-        val univName: String?,
+        val place: String?,
         val region: Region?,
         val area: Area?,
         val detailedAddress : String?,
+        val recruitStatus: Boolean?,
 
         val reward: String?,
         val title: String?,
@@ -41,12 +44,12 @@ class UpdateExperimentPostUseCase (
     data class TargetGroupInfo(
         val startAge: Int?,
         val endAge: Int?,
-        val genderType: GenderType,
+        val genderType: GenderType?,
         val otherCondition: String?
     )
 
     data class ApplyMethodInfo(
-        val content: String,
+        val content: String?,
         val formUrl: String?,
         val phoneNum: String?
     )
@@ -63,7 +66,7 @@ class UpdateExperimentPostUseCase (
         val postId: String,
         val title: String,
         val views: Int,
-        val univName: String?,
+        val place: String?,
         val reward: String?,
         val durationInfo: DurationInfo?,
     )
@@ -101,10 +104,13 @@ class UpdateExperimentPostUseCase (
             leadResearcher = input.leadResearcher,
             detailedAddress = input.detailedAddress,
             matchType = input.matchType,
-            univName = input.univName,
+            place = input.place,
             region = input.region,
             area = input.area,
-            imageListInfo = input.imageListInfo?.images
+            timeRequired = input.timeRequired,
+            imageListInfo = input.imageListInfo?.images,
+            recruitStatus = input.recruitStatus,
+            idGenerator = idGenerator
         )
         val updatedPost = experimentPostGateway.save(experimentPost)
 
@@ -113,7 +119,7 @@ class UpdateExperimentPostUseCase (
                 postId = updatedPost.id,
                 title = updatedPost.title,
                 views = updatedPost.views,
-                univName = updatedPost.univName,
+                place = updatedPost.place,
                 reward = updatedPost.reward,
                 durationInfo = DurationInfo(
                     startDate = updatedPost.startDate,
@@ -126,8 +132,7 @@ class UpdateExperimentPostUseCase (
     private fun validate(input: Input): ExperimentPost {
         val existingPost = validateExistingPost(input)
         validatePermission(existingPost, input)
-        validateNotExpired(existingPost)
-        validateImageCount(input)
+        validateModificationPolicy(existingPost, input)
         return existingPost
     }
 
@@ -140,14 +145,14 @@ class UpdateExperimentPostUseCase (
         if(existingPost.member.id != input.memberId) throw PermissionDeniedException
     }
 
-    private fun validateNotExpired(existingPost: ExperimentPost){
-        if (!existingPost.recruitStatus) throw ExperimentPostUpdateDateException
-    }
-
-    private fun validateImageCount(input: Input) {
-        input.imageListInfo?.let {
-            if(it.images.size > 3) {
-                throw ExperimentPostImageSizeException
+    private fun validateModificationPolicy(existingPost: ExperimentPost, input: Input){
+        val today = LocalDate.now()
+        if(!existingPost.recruitStatus || existingPost.endDate?.isBefore(today) == true){
+            if(input.startDate != null || input.endDate != null) {
+                throw ExperimentPostUpdateDateException
+            }
+            if(input.recruitStatus != null) {
+                throw ExperimentPostRecruitStatusException
             }
         }
     }

@@ -6,7 +6,7 @@ import com.dobby.backend.domain.gateway.experiment.ExperimentPostGateway
 import com.dobby.backend.domain.model.experiment.CustomFilter
 import com.dobby.backend.domain.model.experiment.LocationTarget
 import com.dobby.backend.domain.model.experiment.StudyTarget
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
@@ -41,6 +41,7 @@ class GetExperimentPostsUseCase (
     data class PaginationInput(
         val page: Int = 1,
         val count: Int = 6,
+        val order : String = "DESC"
     )
 
     data class Output(
@@ -51,7 +52,7 @@ class GetExperimentPostsUseCase (
         val experimentPostId: String,
         val title: String,
         val views: Int,
-        val univName: String?,
+        val place: String?,
         val reward: String,
         val recruitStatus: Boolean,
         val durationInfo: DurationInfoOutput
@@ -72,7 +73,8 @@ class GetExperimentPostsUseCase (
         val pagination = Pagination(input.pagination.page, input.pagination.count)
         val posts = experimentPostGateway.findExperimentPostsByCustomFilter(
             domainFilter,
-            pagination
+            pagination,
+            input.pagination.order
         )
 
         return posts?.map { post ->
@@ -81,7 +83,7 @@ class GetExperimentPostsUseCase (
                     experimentPostId = post.id,
                     title = post.title,
                     views = post.views,
-                    univName = post.univName,
+                    place = post.place,
                     reward = post.reward,
                     recruitStatus = post.recruitStatus,
                     durationInfo = DurationInfoOutput(

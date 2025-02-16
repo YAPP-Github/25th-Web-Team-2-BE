@@ -2,7 +2,7 @@ package com.dobby.backend.infrastructure.database.repository
 
 import com.dobby.backend.application.model.Pagination
 import com.dobby.backend.domain.model.experiment.*
-import com.dobby.backend.infrastructure.database.entity.enums.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType
 import com.dobby.backend.infrastructure.database.entity.enums.MatchType.*
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
@@ -11,6 +11,7 @@ import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
 import com.dobby.backend.infrastructure.database.entity.enums.experiment.RecruitStatus
 import com.dobby.backend.infrastructure.database.entity.experiment.*
 import com.dobby.backend.infrastructure.database.entity.member.ParticipantEntity
+import com.dobby.backend.infrastructure.database.entity.member.QMemberConsentEntity
 import com.dobby.backend.infrastructure.database.entity.member.QMemberEntity
 import com.dobby.backend.infrastructure.database.entity.member.QParticipantEntity
 import com.querydsl.core.types.OrderSpecifier
@@ -35,7 +36,8 @@ class ExperimentPostCustomRepositoryImpl (
 
     override fun findExperimentPostsByCustomFilter(
         customFilter: CustomFilter,
-        pagination: Pagination
+        pagination: Pagination,
+        order: String
     ): List<ExperimentPostEntity>? {
         val post = QExperimentPostEntity.experimentPostEntity
         val recruitStatusCondition = when (customFilter.recruitStatus) {
@@ -56,7 +58,7 @@ class ExperimentPostCustomRepositoryImpl (
             )
             .offset((pagination.page - 1L) * pagination.count)
             .limit(pagination.count.toLong())
-            .orderBy(post.createdAt.desc())
+            .orderBy(getOrderClause(order))
             .fetch()
     }
 
@@ -103,7 +105,8 @@ class ExperimentPostCustomRepositoryImpl (
     }
 
     private fun genderEq(post: QExperimentPostEntity, gender: GenderType?): BooleanExpression? {
-        return gender?.let { post.targetGroup.genderType.eq(it) }
+        return gender?.let {
+            post.targetGroup.genderType.eq(it).or(post.targetGroup.genderType.eq(GenderType.ALL)) }
     }
 
     private fun ageBetween(post: QExperimentPostEntity, age: Int?): BooleanExpression? {
@@ -149,7 +152,7 @@ class ExperimentPostCustomRepositoryImpl (
         val qApplyMethod = QApplyMethodEntity.applyMethodEntity
         val qTargetGroup = QTargetGroupEntity.targetGroupEntity
 
-       jpaQueryFactory.update(qExperimentPost)
+        jpaQueryFactory.update(qExperimentPost)
             .set(qExperimentPost.title, experimentPost.title)
             .set(qExperimentPost.reward, experimentPost.reward)
             .set(qExperimentPost.startDate, experimentPost.startDate)
@@ -159,7 +162,7 @@ class ExperimentPostCustomRepositoryImpl (
             .set(qExperimentPost.leadResearcher, experimentPost.leadResearcher)
             .set(qExperimentPost.detailedAddress, experimentPost.detailedAddress)
             .set(qExperimentPost.matchType, experimentPost.matchType)
-            .set(qExperimentPost.univName, experimentPost.univName)
+            .set(qExperimentPost.place, experimentPost.place)
             .set(qExperimentPost.region, experimentPost.region)
             .set(qExperimentPost.area, experimentPost.area)
             .set(qExperimentPost.updatedAt, LocalDateTime.now())
@@ -212,82 +215,88 @@ class ExperimentPostCustomRepositoryImpl (
 
     private var lastProcessedTime: LocalDateTime = LocalDate.now().minusDays(1).atTime(8, 1)
 
-        override fun findMatchingExperimentPostsForAllParticipants(): Map<String, List<ExperimentPostEntity>> {
-            val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    override fun findMatchingExperimentPostsForAllParticipants(): Map<String, List<ExperimentPostEntity>> {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-            val experimentPost = QExperimentPostEntity.experimentPostEntity
-            val targetGroup = QTargetGroupEntity.targetGroupEntity
-            val participant = QParticipantEntity.participantEntity
-            val member = QMemberEntity.memberEntity
+        val experimentPost = QExperimentPostEntity.experimentPostEntity
+        val targetGroup = QTargetGroupEntity.targetGroupEntity
+        val participant = QParticipantEntity.participantEntity
+        val member = QMemberEntity.memberEntity
+        val memberConsent = QMemberConsentEntity.memberConsentEntity
 
-            val currentTime = LocalDateTime.now()
+        val currentTime = LocalDateTime.now()
 
-            logger.info("🕒 [쿼리 범위] lastProcessedTime: {}, currentTime: {}", lastProcessedTime, currentTime)
-            val todayPosts = jpaQueryFactory.selectFrom(experimentPost)
-                .join(experimentPost.targetGroup, targetGroup).fetchJoin()
-                .where(
-                    experimentPost.createdAt.between(lastProcessedTime, currentTime),
-                    experimentPost.alarmAgree.isTrue
-                )
-                .fetch()
+        logger.info("[쿼리 범위] lastProcessedTime: {}, currentTime: {}", lastProcessedTime, currentTime)
+        val todayPosts = jpaQueryFactory.selectFrom(experimentPost)
+            .join(experimentPost.targetGroup, targetGroup).fetchJoin()
+            .where(
+                experimentPost.createdAt.between(lastProcessedTime, currentTime),
+                experimentPost.alarmAgree.isTrue
+            )
+            .fetch()
 
-            logger.info("🚧 [쿼리 결과] todayPosts count: {}", todayPosts.size)
+        logger.info("[쿼리 결과] todayPosts count: {}", todayPosts.size)
 
-            todayPosts.take(10).forEachIndexed { index, post ->
-                logger.debug("📌 [todayPost {}] title: {}, createdAt: {}, alarmAgree: {}", index + 1, post.title, post.createdAt, post.alarmAgree)
-            }
-
-            val participants = jpaQueryFactory
-                .select(participant, member.contactEmail)
-                .from(participant)
-                .join(participant.member, member)
-                .fetch()
-
-            logger.info("🚧 [쿼리 결과] participants count: {}", participants.size)
-
-            participants.take(10).forEachIndexed { index, tuple ->
-                val participantEntity = tuple.get(participant)
-                val email = tuple.get(member.contactEmail)
-                logger.debug("📌 [Participant {}] memberId: {}, email: {}", index + 1, participantEntity?.member?.id, email)
-            }
-
-            val resultMap = participants.mapNotNull { tuple ->
-                val participantEntity: ParticipantEntity = tuple.get(participant)!!
-                val contactEmail: String? = tuple.get(member.contactEmail)
-                val birthDate = participantEntity.birthDate
-
-                contactEmail?.let {
-                    val currentYear = LocalDate.now().year
-                    val participantAge = currentYear - birthDate.year + 1
-
-                    val matchedPosts = todayPosts.filter { post ->
-                        val matchResults = listOf(
-                            customGenderEq(post.targetGroup.genderType, participantEntity.gender),
-                            customAgeBetween(post.targetGroup.startAge, post.targetGroup.endAge, participantAge),
-                            customAddressInfoEq(
-                                post.region, post.area,
-                                participantEntity.basicAddressInfo.region, participantEntity.basicAddressInfo.area,
-                                participantEntity.additionalAddressInfo.region, participantEntity.additionalAddressInfo.area
-                            ),
-                            customMatchTypeEq(post.matchType, participantEntity.matchType)
-                        )
-
-                        logger.debug("🔎 [필터 결과] Email: {}, Post: {}", contactEmail, post.title)
-                        logger.debug("   📍 Gender Match: {}, Age Match: {}, Address Match: {}, MatchType Match: {}", matchResults[0], matchResults[1], matchResults[2], matchResults[3])
-
-                        matchResults.all { it }
-                    }.take(10)
-
-                    logger.info("📌 [매칭 결과] Email: {}, Matched posts: {}", contactEmail, matchedPosts.size)
-
-                    if (matchedPosts.isNotEmpty()) Pair(it, matchedPosts) else null
-                }
-            }.toMap()
-
-            logger.info("📧 [최종 결과] 이메일을 받을 대상자 수: {}", resultMap.size)
-
-            return resultMap
+        todayPosts.take(10).forEachIndexed { index, post ->
+            logger.debug("[todayPost {}] title: {}, createdAt: {}, alarmAgree: {}", index + 1, post.title, post.createdAt, post.alarmAgree)
         }
+
+        val participants = jpaQueryFactory
+            .select(participant, member.contactEmail)
+            .from(participant)
+            .join(participant.member, member)
+            .join(memberConsent).on(member.id.eq(memberConsent.memberId))
+            .where(
+                participant.member.deletedAt.isNull,
+                memberConsent.matchConsent.isTrue
+                )
+            .fetch()
+
+        logger.info("[쿼리 결과] participants count: {}", participants.size)
+
+        participants.take(10).forEachIndexed { index, tuple ->
+            val participantEntity = tuple.get(participant)
+            val email = tuple.get(member.contactEmail)
+            logger.debug("[Participant {}] memberId: {}, email: {}", index + 1, participantEntity?.member?.id, email)
+        }
+
+        val resultMap = participants.mapNotNull { tuple ->
+            val participantEntity: ParticipantEntity = tuple.get(participant)!!
+            val contactEmail: String? = tuple.get(member.contactEmail)
+            val birthDate = participantEntity.birthDate
+
+            contactEmail?.let {
+                val currentYear = LocalDate.now().year
+                val participantAge = currentYear - birthDate.year + 1
+
+                val matchedPosts = todayPosts.filter { post ->
+                    val matchResults = listOf(
+                        customGenderEq(post.targetGroup.genderType, participantEntity.gender),
+                        customAgeBetween(post.targetGroup.startAge, post.targetGroup.endAge, participantAge),
+                        customAddressInfoEq(
+                            post.region, post.area,
+                            participantEntity.basicAddressInfo.region, participantEntity.basicAddressInfo.area,
+                            participantEntity.additionalAddressInfo.region, participantEntity.additionalAddressInfo.area
+                        ),
+                        customMatchTypeEq(post.matchType, participantEntity.matchType)
+                    )
+
+                    logger.debug("[필터 결과] Email: {}, Post: {}", contactEmail, post.title)
+                    logger.debug("Gender Match: {}, Age Match: {}, Address Match: {}, MatchType Match: {}", matchResults[0], matchResults[1], matchResults[2], matchResults[3])
+
+                    matchResults.all { it }
+                }.take(10)
+
+                logger.info("[매칭 결과] Email: {}, Matched posts: {}", contactEmail, matchedPosts.size)
+
+                if (matchedPosts.isNotEmpty()) Pair(it, matchedPosts) else null
+            }
+        }.toMap()
+
+        logger.info("[최종 결과] 이메일을 받을 대상자 수: {}", resultMap.size)
+
+        return resultMap
+    }
 
     private fun customGenderEq(
         postGender: GenderType,
@@ -328,5 +337,4 @@ class ExperimentPostCustomRepositoryImpl (
             return true
         return postMatchType == participantMatchType
     }
-
 }

@@ -6,6 +6,11 @@ import com.dobby.backend.domain.model.member.Member
 import com.dobby.backend.infrastructure.database.entity.enums.*
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Area
 import com.dobby.backend.infrastructure.database.entity.enums.areaInfo.Region
+import com.dobby.backend.infrastructure.database.entity.enums.experiment.TimeSlot
+import com.dobby.backend.infrastructure.database.entity.enums.member.GenderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.MemberStatus
+import com.dobby.backend.infrastructure.database.entity.enums.member.ProviderType
+import com.dobby.backend.infrastructure.database.entity.enums.member.RoleType
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -34,7 +39,8 @@ class GetMatchingExperimentPostsUseCaseTest : BehaviorSpec({
                 provider = ProviderType.NAVER,
                 status = MemberStatus.ACTIVE,
                 createdAt = LocalDateTime.now(fixedClock),
-                updatedAt = LocalDateTime.now(fixedClock)
+                updatedAt = LocalDateTime.now(fixedClock),
+                deletedAt = null
             )
 
             val experimentPosts = listOf(
@@ -64,7 +70,7 @@ class GetMatchingExperimentPostsUseCaseTest : BehaviorSpec({
                     count = 35,
                     timeRequired = TimeSlot.LESS_30M,
                     leadResearcher = "야뿌 랩실 서버 25기 신수정",
-                    univName = "이화여자대학교",
+                    place = "이화여자대학교",
                     region = Region.SEOUL,
                     area = Area.SEOUL_ALL,
                     detailedAddress = "ECC B123호",
